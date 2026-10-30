@@ -41,6 +41,7 @@ import "./App.css";
 import { LogOut } from "lucide-react";
 import AuthScreen from "./AuthScreen";
 import api from "./api";
+import AddReadingModal from "./AddReadingModal";
 
 // ============================================
 // THEME CONFIGURATION
@@ -145,6 +146,7 @@ const readings = [
 // ============================================
 
 function DashboardApp({ user, onLogout }) {
+  const [showAddReading, setShowAddReading] = useState(false);
   const [activePage, setActivePage] = useState("Overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -379,9 +381,19 @@ function DashboardApp({ user, onLogout }) {
             activePage={activePage}
             setActivePage={setActivePage}
             user={user}
+            onAddReading={() => setShowAddReading(true)}
           />
         )}
       </main>
+
+      {showAddReading && (
+        <AddReadingModal
+          onClose={() => setShowAddReading(false)}
+          onCreated={() => {
+            console.log("Glucose reading saved successfully.");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -390,7 +402,7 @@ function DashboardApp({ user, onLogout }) {
 // DASHBOARD
 // ============================================
 
-function Dashboard({ activePage, setActivePage, user }) {
+function Dashboard({ activePage, setActivePage, user, onAddReading }) {
   if (activePage !== "Overview") {
     return (
       <section className="dashboard-content">
@@ -437,7 +449,7 @@ function Dashboard({ activePage, setActivePage, user }) {
           </p>
         </div>
 
-        <button className="primary-button">
+        <button className="primary-button" onClick={onAddReading}>
           <Plus size={18} />
           Add reading
         </button>
