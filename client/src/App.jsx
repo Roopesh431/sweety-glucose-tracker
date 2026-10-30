@@ -38,6 +38,9 @@ import {
 } from "recharts";
 
 import "./App.css";
+import { LogOut } from "lucide-react";
+import AuthScreen from "./AuthScreen";
+import api from "./api";
 
 // ============================================
 // THEME CONFIGURATION
@@ -141,7 +144,7 @@ const readings = [
 // MAIN APP
 // ============================================
 
-function App() {
+function DashboardApp({ user, onLogout }) {
   const [activePage, setActivePage] = useState("Overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -295,15 +298,30 @@ function App() {
           </button>
 
           <div className="profile">
-            <div className="avatar">DP</div>
+  <div className="avatar">
+    {(user?.name || "U")
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()}
+  </div>
 
-            <div className="profile-info">
-              <strong>Demo Patient</strong>
-              <span>Personal account</span>
-            </div>
+  <div className="profile-info">
+    <strong>{user?.name || "User"}</strong>
+    <span>Personal account</span>
+  </div>
 
-            <MoreHorizontal size={20} />
-          </div>
+  <button
+    type="button"
+    className="logout-button"
+    onClick={onLogout}
+    title="Sign out"
+    aria-label="Sign out"
+  >
+    <LogOut size={18} />
+  </button>
+</div>
         </div>
       </aside>
 
@@ -338,7 +356,14 @@ function App() {
               <i />
             </button>
 
-            <div className="top-avatar">DP</div>
+            <div className="top-avatar">
+                {(user?.name || "U")
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()}
+            </div>
           </div>
         </header>
 
@@ -353,6 +378,7 @@ function App() {
           <Dashboard
             activePage={activePage}
             setActivePage={setActivePage}
+            user={user}
           />
         )}
       </main>
@@ -364,7 +390,7 @@ function App() {
 // DASHBOARD
 // ============================================
 
-function Dashboard({ activePage, setActivePage }) {
+function Dashboard({ activePage, setActivePage, user }) {
   if (activePage !== "Overview") {
     return (
       <section className="dashboard-content">
@@ -403,7 +429,7 @@ function Dashboard({ activePage, setActivePage }) {
           <div className="eyebrow">FRIDAY, OCTOBER 30, 2026</div>
 
           <h1>
-            Good morning, Demo Patient <span>✦</span>
+            Good morning, {user?.name?.split(" ")[0] || "there"} <span>✦</span>
           </h1>
 
           <p className="welcome-subtitle">
@@ -979,6 +1005,65 @@ function AppearanceSettings({
       </div>
     </section>
   );
+}
+
+// ============================================
+// AUTHENTICATION WRAPPER
+// ============================================
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("sweety-token");
+
+    if (!token) {
+      setAuthLoading(false);
+      return;
+    }
+
+    const verifySession = async () => {
+  try {
+    const response = await api.get("/auth/profile");
+    setUser(response.data.user);
+  } catch (error) {
+    console.error("Session verification failed:", error);
+    localStorage.removeItem("sweety-token");
+    setUser(null);
+  } finally {
+    setAuthLoading(false);
+  }
+};
+
+    verifySession();
+  }, []);
+
+  const handleAuthenticated = (token, authenticatedUser) => {
+    localStorage.setItem("sweety-token", token);
+    setUser(authenticatedUser);
+    setAuthLoading(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("sweety-token");
+    setUser(null);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="auth-loading">
+        <Heart size={26} fill="currentColor" />
+        <span>Getting your space ready...</span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen onAuthenticated={handleAuthenticated} />;
+  }
+
+  return <DashboardApp user={user} onLogout={handleLogout} />;
 }
 
 export default App;

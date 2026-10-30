@@ -1524,3 +1524,32 @@ button {
     padding: 15px;
   }
 }
+
+.logout-button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.logout-button:hover {
+  background: var(--app-bg);
+  color: var(--ink);
+}
+
+.auth-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #f5f4ec;
+  color: #82977b;
+  font-size: 14px;
+  font-weight: 600;
+}
