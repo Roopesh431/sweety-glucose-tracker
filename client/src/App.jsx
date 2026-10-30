@@ -42,6 +42,7 @@ import { LogOut } from "lucide-react";
 import AuthScreen from "./AuthScreen";
 import api from "./api";
 import AddReadingModal from "./AddReadingModal";
+import MyReadings from "./MyReadings";
 
 // ============================================
 // THEME CONFIGURATION
@@ -105,41 +106,86 @@ const navigation = [
 ];
 
 // ============================================
-// DEMO DATA - WILL BE REPLACED BY API DATA
+// DATE AND READING HELPERS
 // ============================================
 
-const chartData = [
-  { day: "24 Oct", value: 112 },
-  { day: "25 Oct", value: 126 },
-  { day: "26 Oct", value: 119 },
-  { day: "27 Oct", value: 145 },
-  { day: "28 Oct", value: 132 },
-  { day: "29 Oct", value: 143 },
-  { day: "30 Oct", value: 110 },
-];
+const SLOT_LABELS = {
+  morning: "Morning (fasting)",
+  after_breakfast: "After breakfast",
+  after_lunch: "After lunch",
+  after_dinner: "After dinner",
+};
 
-const readings = [
-  {
-    date: "Today, 08:00 AM",
-    slot: "Morning (fasting)",
-    value: 110,
-  },
-  {
-    date: "Yesterday, 09:00 PM",
-    slot: "After dinner",
-    value: 130,
-  },
-  {
-    date: "Yesterday, 02:00 PM",
-    slot: "After lunch",
-    value: 160,
-  },
-  {
-    date: "Yesterday, 09:00 AM",
-    slot: "After breakfast",
-    value: 140,
-  },
-];
+const formatDate = (dateValue) => {
+  if (!dateValue) return "—";
+  const date = new Date(`${String(dateValue).slice(0, 10)}T00:00:00`);
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatReadingDate = (dateValue) => {
+  if (!dateValue) return "—";
+  const today = new Date();
+  const todayString = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayString = [
+    yesterday.getFullYear(),
+    String(yesterday.getMonth() + 1).padStart(2, "0"),
+    String(yesterday.getDate()).padStart(2, "0"),
+  ].join("-");
+  const value = String(dateValue).slice(0, 10);
+
+  if (value === todayString) return "Today";
+  if (value === yesterdayString) return "Yesterday";
+  return formatDate(value);
+};
+
+const formatSlot = (slot) => SLOT_LABELS[slot] || slot || "—";
+
+const getLocalDateString = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const buildChartData = (allReadings) => {
+  const today = new Date();
+  const days = [];
+
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - offset);
+    const dateKey = getLocalDateString(date);
+    const dayReadings = allReadings.filter(
+      (reading) => String(reading.reading_date).slice(0, 10) === dateKey
+    );
+    const average = dayReadings.length
+      ? dayReadings.reduce(
+          (sum, reading) => sum + Number(reading.glucose_value),
+          0
+        ) / dayReadings.length
+      : null;
+
+    days.push({
+      day: date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+      }),
+      value: average === null ? null : Number(average.toFixed(1)),
+    });
+  }
+
+  return days;
+};
 
 // ============================================
 // MAIN APP
@@ -147,6 +193,37 @@ const readings = [
 
 function DashboardApp({ user, onLogout }) {
   const [showAddReading, setShowAddReading] = useState(false);
+  const [readings, setReadings] = useState([]);
+  const [report, setReport] = useState(null);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState("");
+
+  const loadDashboardData = async () => {
+    setDataLoading(true);
+    setDataError("");
+
+    try {
+      const [readingsResponse, reportResponse] = await Promise.all([
+        api.get("/readings"),
+        api.get("/reports"),
+      ]);
+
+      setReadings(readingsResponse.data.readings || []);
+      setReport(reportResponse.data);
+    } catch (error) {
+      console.error("Dashboard data loading failed:", error);
+      setDataError(
+        error.response?.data?.message ||
+          "Unable to load your glucose data. Please try again."
+      );
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
   const [activePage, setActivePage] = useState("Overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -376,11 +453,25 @@ function DashboardApp({ user, onLogout }) {
             selectedTheme={selectedTheme}
             resetSettings={resetSettings}
           />
+        ) : activePage === "My Readings" ? (
+          <MyReadings
+            readings={readings}
+            loading={dataLoading}
+            error={dataError}
+            onRetry={loadDashboardData}
+            onAddReading={() => setShowAddReading(true)}
+            onChanged={loadDashboardData}
+          />
         ) : (
           <Dashboard
             activePage={activePage}
             setActivePage={setActivePage}
             user={user}
+            readings={readings}
+            report={report}
+            dataLoading={dataLoading}
+            dataError={dataError}
+            onRetry={loadDashboardData}
             onAddReading={() => setShowAddReading(true)}
           />
         )}
@@ -390,7 +481,7 @@ function DashboardApp({ user, onLogout }) {
         <AddReadingModal
           onClose={() => setShowAddReading(false)}
           onCreated={() => {
-            console.log("Glucose reading saved successfully.");
+            loadDashboardData();
           }}
         />
       )}
@@ -402,7 +493,17 @@ function DashboardApp({ user, onLogout }) {
 // DASHBOARD
 // ============================================
 
-function Dashboard({ activePage, setActivePage, user, onAddReading }) {
+function Dashboard({
+  activePage,
+  setActivePage,
+  user,
+  readings,
+  report,
+  dataLoading,
+  dataError,
+  onRetry,
+  onAddReading,
+}) {
   if (activePage !== "Overview") {
     return (
       <section className="dashboard-content">
@@ -434,11 +535,23 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
     );
   }
 
+  const monthlyStats = report?.monthToDate || {};
+  const dailyStats = report?.daily || {};
+  const chartData = buildChartData(readings);
+  const recentReadings = readings.slice(0, 4);
+
   return (
     <section className="dashboard-content">
       <div className="welcome-row">
         <div>
-          <div className="eyebrow">FRIDAY, OCTOBER 30, 2026</div>
+          <div className="eyebrow">
+            {new Date().toLocaleDateString("en-IN", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }).toUpperCase()}
+          </div>
 
           <h1>
             Good morning, {user?.name?.split(" ")[0] || "there"} <span>✦</span>
@@ -454,6 +567,13 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
           Add reading
         </button>
       </div>
+
+      {dataError && (
+        <div className="reading-modal-error" role="alert">
+          {dataError}{" "}
+          <button className="text-button" onClick={onRetry}>Try again</button>
+        </div>
+      )}
 
       <div className="section-heading">
         <div>
@@ -472,34 +592,34 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
         <StatCard
           icon={<Droplets size={19} />}
           label="Average glucose"
-          value="135"
+          value={dataLoading ? "—" : monthlyStats.average ?? "—"}
           unit="mg/dL"
-          trend="Across 4 readings"
+          trend={`${monthlyStats.count || 0} readings this month`}
           color="purple"
         />
 
         <StatCard
           icon={<TrendingUp size={19} />}
           label="Highest reading"
-          value="160"
+          value={dataLoading ? "—" : monthlyStats.highest ?? "—"}
           unit="mg/dL"
-          trend="October 29"
+          trend="Month to date"
           color="orange"
         />
 
         <StatCard
           icon={<TrendingDown size={19} />}
           label="Lowest reading"
-          value="110"
+          value={dataLoading ? "—" : monthlyStats.lowest ?? "—"}
           unit="mg/dL"
-          trend="October 30"
+          trend="Month to date"
           color="green"
         />
 
         <StatCard
           icon={<Activity size={19} />}
           label="Total readings"
-          value="4"
+          value={dataLoading ? "—" : monthlyStats.count ?? 0}
           unit="readings"
           trend="This month"
           color="blue"
@@ -511,7 +631,7 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
           <div className="panel-header">
             <div>
               <h3>Your glucose journey</h3>
-              <p>Readings from the last 7 days</p>
+              <p>Daily average from your last 7 days</p>
             </div>
 
             <button className="icon-button" aria-label="More options">
@@ -575,7 +695,7 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
                 />
 
                 <YAxis
-                  domain={[60, 200]}
+                  domain={[0, "auto"]}
                   axisLine={false}
                   tickLine={false}
                   tick={{
@@ -596,13 +716,18 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          {!dataLoading && !dataError && readings.length === 0 && (
+            <p className="chart-empty-note">
+              Your glucose trend will appear after you add readings.
+            </p>
+          )}
         </section>
 
         <section className="panel daily-panel">
           <div className="panel-header">
             <div>
               <h3>Today, so far</h3>
-              <p>October 30, 2026</p>
+              <p>{formatDate(dailyStats.date)}</p>
             </div>
 
             <CalendarDays size={19} className="muted-icon" />
@@ -612,12 +737,12 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
             <span>Today's average</span>
 
             <strong>
-              110 <small>mg/dL</small>
+              {dataLoading ? "—" : dailyStats.average ?? "—"} <small>mg/dL</small>
             </strong>
 
             <div className="status-pill">
               <span />
-              1 reading recorded
+              {dailyStats.count || 0} {dailyStats.count === 1 ? "reading" : "readings"} recorded
             </div>
           </div>
 
@@ -625,17 +750,17 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
 
           <div className="daily-stat">
             <span>Highest reading</span>
-            <strong>110 mg/dL</strong>
+            <strong>{dataLoading ? "—" : dailyStats.highest ?? "—"} mg/dL</strong>
           </div>
 
           <div className="daily-stat">
             <span>Lowest reading</span>
-            <strong>110 mg/dL</strong>
+            <strong>{dataLoading ? "—" : dailyStats.lowest ?? "—"} mg/dL</strong>
           </div>
 
           <div className="daily-stat">
             <span>Total readings</span>
-            <strong>1</strong>
+            <strong>{dataLoading ? "—" : dailyStats.count ?? 0}</strong>
           </div>
 
           <div className="daily-note">
@@ -662,24 +787,42 @@ function Dashboard({ activePage, setActivePage, user, onAddReading }) {
 
         <div className="readings-table">
           <div className="table-row table-heading">
-            <span>DATE & TIME</span>
+            <span>DATE</span>
             <span>TIME SLOT</span>
             <span>GLUCOSE LEVEL</span>
             <span>STATUS</span>
           </div>
 
-          {readings.map((reading, index) => (
-            <div className="table-row" key={index}>
-              <span className="reading-date">{reading.date}</span>
-              <span>{reading.slot}</span>
-
-              <strong>
-                {reading.value} <small>mg/dL</small>
-              </strong>
-
-              <span className="reading-status">Recorded</span>
+          {dataLoading ? (
+            <div className="table-row">
+              <span>Loading your readings...</span>
             </div>
-          ))}
+          ) : dataError ? (
+            <div className="table-row">
+              <span>{dataError}</span>
+              <button className="text-button" onClick={onRetry}>Retry</button>
+            </div>
+          ) : recentReadings.length === 0 ? (
+            <div className="empty-readings">
+              <Droplets size={24} />
+              <strong>No readings yet</strong>
+              <span>Add your first glucose reading to see it here.</span>
+              <button className="text-button" onClick={onAddReading}>Add a reading</button>
+            </div>
+          ) : (
+            recentReadings.map((reading) => (
+              <div className="table-row" key={reading.id}>
+                <span className="reading-date">
+                  {formatReadingDate(reading.reading_date)}
+                </span>
+                <span>{formatSlot(reading.time_slot)}</span>
+                <strong>
+                  {reading.glucose_value} <small>mg/dL</small>
+                </strong>
+                <span className="reading-status">Recorded</span>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
