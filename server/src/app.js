@@ -5,15 +5,18 @@ const { query } = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
 const readingRoutes = require("./routes/readingRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 const app = express();
 
+// Middleware
 app.use(cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173"
 }));
 
 app.use(express.json());
 
+// Root endpoint
 app.get("/", (req, res) => {
     res.json({
         success: true,
@@ -21,6 +24,7 @@ app.get("/", (req, res) => {
     });
 });
 
+// Health check
 app.get("/api/health", async (req, res) => {
     try {
         const result = await query("SELECT NOW() AS database_time");
@@ -41,9 +45,12 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/readings", readingRoutes);
+app.use("/api/reports", reportRoutes);
 
+// 404 handler
 app.use((req, res) => {
     res.status(404).json({
         success: false,
