@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Heart, Eye, EyeOff, Activity } from "lucide-react";
+import { Heart, Eye, EyeOff, Activity, ShieldCheck } from "lucide-react";
 import api from "./api";
 import "./AuthScreen.css";
 
@@ -21,6 +22,12 @@ export default function AuthScreen({ onAuthenticated }) {
       ...previous,
       [event.target.name]: event.target.value,
     }));
+  };
+
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    setError("");
+    setShowPassword(false);
   };
 
   const handleSubmit = async (event) => {
@@ -81,69 +88,40 @@ export default function AuthScreen({ onAuthenticated }) {
 
   return (
     <main className="auth-page">
-      <section className="auth-intro">
-        <div className="auth-brand">
-          <span className="auth-brand-icon">
-            <Heart size={22} fill="white" />
-          </span>
-          <span>Sweety<span className="auth-brand-dot">.</span></span>
-        </div>
-
-        <div className="auth-intro-content">
-          <span className="auth-eyebrow">YOUR PERSONAL HEALTH SPACE</span>
-
-          <h1>
-            A little care,
-            <br />
-            every day.
-          </h1>
-
-          <p>
-            Keep track of your glucose readings, understand your patterns,
-            and build healthier habits at your own pace.
-          </p>
-
-          <div className="auth-feature">
-            <span><Activity size={19} /></span>
-            <div>
-              <strong>Your readings, in one place</strong>
-              <small>A simple way to keep track of your progress.</small>
-            </div>
-          </div>
-        </div>
-
-        <span className="auth-footer">
-          Made with care. Your health matters.
-        </span>
-      </section>
+      {/* FORM SECTION */}
 
       <section className="auth-form-side">
         <div className="auth-form-container">
-          <div className="auth-mobile-brand">
-            <Heart size={20} fill="currentColor" />
-            Sweety.
+          <a className="auth-brand" href="/" aria-label="Sweety home">
+            <span className="auth-brand-icon">
+              <Heart size={19} fill="currentColor" />
+            </span>
+            <span>Sweety<span className="auth-brand-dot">.</span></span>
+          </a>
+
+          <div className="auth-heading">
+            <span className="auth-eyebrow">
+              {isRegister ? "GETTING STARTED" : "WELCOME BACK"}
+            </span>
+
+            <h1>
+              {isRegister
+                ? "Create your account"
+                : "Good to see you again."}
+            </h1>
+
+            <p className="auth-description">
+              {isRegister
+                ? "Create your personal space to keep track of your glucose readings."
+                : "Sign in to view your readings and keep track of your progress."}
+            </p>
           </div>
-
-          <span className="auth-eyebrow">
-            {isRegister ? "LET'S GET STARTED" : "WELCOME BACK"}
-          </span>
-
-          <h2>{isRegister ? "Create your account" : "Good to see you again."}</h2>
-
-          <p className="auth-description">
-            {isRegister
-              ? "A few details and your personal health space is ready."
-              : "Sign in to continue your health journey."}
-          </p>
 
           <div className="auth-mode-switch">
             <button
               type="button"
               className={!isRegister ? "selected" : ""}
-              onClick={() => {
-                setMode("login");
-                setError("");
-              }}
+              onClick={() => switchMode("login")}
             >
               Sign in
             </button>
@@ -151,10 +129,7 @@ export default function AuthScreen({ onAuthenticated }) {
             <button
               type="button"
               className={isRegister ? "selected" : ""}
-              onClick={() => {
-                setMode("register");
-                setError("");
-              }}
+              onClick={() => switchMode("register")}
             >
               Create account
             </button>
@@ -171,6 +146,7 @@ export default function AuthScreen({ onAuthenticated }) {
                   value={form.name}
                   onChange={handleChange}
                   maxLength={100}
+                  autoComplete="name"
                   required
                 />
               </label>
@@ -185,12 +161,14 @@ export default function AuthScreen({ onAuthenticated }) {
                 value={form.email}
                 onChange={handleChange}
                 maxLength={255}
+                autoComplete="email"
                 required
               />
             </label>
 
             <label>
               Password
+
               <div className="auth-password-field">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -200,6 +178,9 @@ export default function AuthScreen({ onAuthenticated }) {
                   onChange={handleChange}
                   minLength={8}
                   maxLength={72}
+                  autoComplete={
+                    isRegister ? "new-password" : "current-password"
+                  }
                   required
                 />
 
@@ -208,12 +189,20 @@ export default function AuthScreen({ onAuthenticated }) {
                   onClick={() => setShowPassword((previous) => !previous)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
                 </button>
               </div>
             </label>
 
-            {error && <div className="auth-error">{error}</div>}
+            {error && (
+              <div className="auth-error" role="alert">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -229,24 +218,70 @@ export default function AuthScreen({ onAuthenticated }) {
           </form>
 
           <p className="auth-switch-text">
-            {isRegister ? "Already have an account?" : "New to Sweety?"}{" "}
+            {isRegister
+              ? "Already have an account?"
+              : "New to Sweety?"}{" "}
             <button
               type="button"
-              onClick={() => {
-                setMode(isRegister ? "login" : "register");
-                setError("");
-              }}
+              onClick={() => switchMode(isRegister ? "login" : "register")}
             >
               {isRegister ? "Sign in" : "Create an account"}
             </button>
           </p>
 
-          <p className="auth-privacy">
-            Your health information is personal. Your account keeps your
-            readings private.
+          <div className="auth-privacy">
+            <ShieldCheck size={15} />
+            <span>
+              Your account keeps your readings private.
+            </span>
+          </div>
+
+          <p className="auth-copyright">
+            © {new Date().getFullYear()} Sweety. Made with care.
           </p>
         </div>
       </section>
+
+      {/* VISUAL SECTION */}
+
+      <aside className="auth-visual">
+        <div className="visual-top">
+          <span className="visual-label">A HEALTHIER ROUTINE</span>
+          <Activity size={19} />
+        </div>
+
+        <div className="visual-center">
+          <div className="sculpture-scene" aria-hidden="true">
+            <div className="sculpture-shadow" />
+            <div className="sculpture-base" />
+            <div className="sculpture-ribbon ribbon-one" />
+            <div className="sculpture-ribbon ribbon-two" />
+            <div className="sculpture-ribbon ribbon-three" />
+            <div className="sculpture-highlight" />
+          </div>
+
+          <div className="visual-copy">
+            <span>YOUR PERSONAL HEALTH SPACE</span>
+            <h2>
+              Small steps.
+              <br />
+              Better habits.
+            </h2>
+            <p>
+              A simple place to understand your readings and stay
+              connected with your health.
+            </p>
+          </div>
+        </div>
+
+        <div className="visual-bottom">
+          <div className="visual-bottom-mark">
+            <Heart size={15} />
+            <span>One day at a time.</span>
+          </div>
+          <span>Take care of yourself.</span>
+        </div>
+      </aside>
     </main>
   );
 }

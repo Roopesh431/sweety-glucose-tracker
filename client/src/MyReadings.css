@@ -1,59 +1,624 @@
+
+/* =========================================
+   SWEETY - MY READINGS
+   Clean, calm health history
+========================================= */
+
+.my-readings-page {
+  color: var(--ink);
+}
+
+/* Toolbar */
+
 .my-readings-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 18px 22px;
-  margin: 22px 0;
+  gap: 20px;
+  padding: 17px 19px;
+  margin: 22px 0 17px;
+  border-radius: 11px;
 }
-.my-readings-count { display: flex; align-items: center; gap: 12px; }
-.my-readings-count-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, transparent); }
-.my-readings-count div { display: grid; gap: 3px; }
-.my-readings-count strong { font-size: 19px; color: var(--ink); }
-.my-readings-count span:last-child { font-size: 12px; color: var(--muted); }
-.my-readings-filter { display: flex; align-items: center; gap: 9px; border: 1px solid var(--border); background: var(--app-bg); border-radius: 10px; padding: 8px 11px; color: var(--muted); }
-.my-readings-filter input { border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px; }
-.my-readings-filter button { border: 0; background: transparent; color: var(--accent); cursor: pointer; font-size: 12px; font-weight: 700; }
-.my-readings-list-panel { padding: 22px; }
-.my-readings-list-heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 18px; }
-.my-readings-list-heading h2 { margin: 0 0 5px; font-size: 18px; color: var(--ink); }
-.my-readings-list-heading p { margin: 0; color: var(--muted); font-size: 12px; }
-.my-reading-refresh { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 12px; }
-.my-reading-refresh:disabled { opacity: .55; cursor: wait; }
-.my-readings-table-wrap { overflow-x: auto; }
-.my-readings-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 560px; }
-.my-readings-table th { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 13px 12px; border-bottom: 1px solid var(--border); }
-.my-readings-table th svg { vertical-align: middle; margin-right: 5px; }
-.my-readings-table td { padding: 16px 12px; border-bottom: 1px solid var(--border); color: var(--ink); font-size: 13px; }
-.my-readings-table tbody tr:last-child td { border-bottom: 0; }
-.my-reading-value { color: var(--ink); font-size: 14px; }
-.my-reading-value small { color: var(--muted); font-size: 11px; font-weight: 500; }
-.my-reading-row-actions { display: flex; gap: 7px; }
-.my-reading-row-actions button, .my-reading-icon-button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--muted); cursor: pointer; }
-.my-reading-row-actions button:hover { color: var(--accent); border-color: var(--accent); }
-.my-reading-row-actions button.delete:hover { color: #c45c4d; border-color: #c45c4d; }
-.my-reading-row-actions button:disabled { opacity: .5; cursor: wait; }
-.my-readings-empty { min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; color: var(--muted); padding: 25px; }
-.my-readings-empty > span { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
-.my-readings-empty strong { color: var(--ink); font-size: 15px; }
-.my-readings-empty p { max-width: 360px; margin: 0 0 7px; font-size: 13px; line-height: 1.6; }
-.my-reading-overlay { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 20px; background: rgba(20, 29, 21, .48); backdrop-filter: blur(3px); }
-.my-reading-modal { width: 100%; max-width: 440px; padding: 25px; border-radius: 18px; background: var(--surface); color: var(--ink); border: 1px solid var(--border); box-shadow: 0 22px 70px rgba(0,0,0,.18); }
-.my-reading-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 23px; }
-.my-reading-eyebrow { color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: 1.3px; }
-.my-reading-modal h2 { margin: 7px 0 5px; font-size: 21px; }
-.my-reading-modal p { margin: 0; color: var(--muted); font-size: 12px; }
-.my-reading-form { display: grid; gap: 16px; }
-.my-reading-form label { display: grid; gap: 8px; font-size: 13px; font-weight: 650; }
-.my-reading-form input, .my-reading-form select { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--app-bg); color: var(--ink); font: inherit; font-size: 13px; outline: none; }
-.my-reading-form input:focus, .my-reading-form select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
-.my-reading-form-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 5px; }
-.my-reading-primary, .my-reading-secondary { border: 0; border-radius: 9px; padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
-.my-reading-primary { background: var(--accent); color: white; }
-.my-reading-secondary { background: var(--app-bg); color: var(--ink); }
-.my-reading-primary:disabled, .my-reading-secondary:disabled { opacity: .6; cursor: not-allowed; }
-.my-reading-error { padding: 11px 13px; margin: 12px 0; border-radius: 9px; background: #fff0ed; border: 1px solid #f2d2ca; color: #a84d3e; font-size: 13px; line-height: 1.5; }
-.my-reading-error button { border: 0; background: transparent; color: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
-.my-reading-spin { animation: my-reading-rotate 1s linear infinite; }
-@keyframes my-reading-rotate { to { transform: rotate(360deg); } }
-@media (max-width: 650px) { .my-readings-toolbar { align-items: stretch; flex-direction: column; } .my-readings-filter { width: 100%; box-sizing: border-box; } .my-readings-filter input { flex: 1; min-width: 0; } .my-readings-list-panel { padding: 16px; } }
+
+.my-readings-count {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.my-readings-count-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+}
+
+.my-readings-count div {
+  display: grid;
+  gap: 3px;
+}
+
+.my-readings-count strong {
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.my-readings-count span:last-child {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.my-readings-filter-area {
+  display: grid;
+  gap: 6px;
+}
+
+.my-readings-filter-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.my-readings-filter {
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 7px;
+  padding: 9px 11px;
+  color: var(--muted);
+}
+
+.my-readings-filter:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.my-readings-filter input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.my-readings-filter button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+/* History panel */
+
+.my-readings-list-panel {
+  padding: 19px;
+  border-radius: 11px;
+}
+
+.my-readings-list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 21px;
+}
+
+.my-readings-list-heading h2 {
+  margin: 0 0 5px;
+  color: var(--ink);
+  font-family: Manrope, sans-serif;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.my-readings-list-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.my-readings-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.my-readings-result-count {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.my-reading-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  transition: border-color .18s, color .18s;
+}
+
+.my-reading-refresh:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.my-reading-refresh:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+/* Date groups */
+
+.my-readings-groups {
+  display: grid;
+  gap: 23px;
+}
+
+.my-reading-date-group {
+  min-width: 0;
+}
+
+.my-reading-date-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 3px 11px;
+}
+
+.my-reading-date-icon {
+  width: 31px;
+  height: 31px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+}
+
+.my-reading-date-heading > div:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.my-reading-date-heading strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.my-reading-date-heading span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.my-reading-date-count {
+  margin-left: auto;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: var(--app-bg);
+  color: var(--muted);
+  font-size: 9px;
+}
+
+/* Table */
+
+.my-readings-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.my-readings-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  min-width: 450px;
+}
+
+.my-readings-table th {
+  background: var(--app-bg);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.my-readings-table th svg {
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.my-readings-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.my-readings-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.my-readings-table tbody tr {
+  transition: background .15s;
+}
+
+.my-readings-table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.my-reading-slot {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.my-reading-value {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -.2px;
+}
+
+.my-reading-value small {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 450;
+}
+
+/* Row actions */
+
+.my-reading-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.my-reading-row-actions button,
+.my-reading-icon-button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .18s, color .18s, border-color .18s;
+}
+
+.my-reading-row-actions button:hover,
+.my-reading-icon-button:hover {
+  border-color: var(--border);
+  background: var(--app-bg);
+  color: var(--accent);
+}
+
+.my-reading-row-actions button.delete:hover {
+  border-color: #efd8d3;
+  background: #fff5f2;
+  color: #b65a4d;
+}
+
+.my-reading-row-actions button:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+/* Empty and loading states */
+
+.my-readings-empty {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.my-readings-empty > span {
+  width: 49px;
+  height: 49px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+}
+
+.my-readings-empty strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.my-readings-empty p {
+  max-width: 350px;
+  margin: 0 0 7px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* =========================================
+   EDIT MODAL
+========================================= */
+
+.my-reading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  overflow-y: auto;
+  background: rgba(26, 38, 30, .46);
+  backdrop-filter: blur(3px);
+}
+
+.my-reading-modal {
+  width: 100%;
+  max-width: 430px;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  padding: 23px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .16);
+}
+
+.my-reading-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 21px;
+}
+
+.my-reading-eyebrow {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 1.2px;
+}
+
+.my-reading-modal h2 {
+  margin: 7px 0 5px;
+  color: var(--ink);
+  font-family: Manrope, sans-serif;
+  font-size: 20px;
+}
+
+.my-reading-modal p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.my-reading-icon-button {
+  flex-shrink: 0;
+  border-color: var(--border);
+}
+
+.my-reading-form {
+  display: grid;
+  gap: 15px;
+}
+
+.my-reading-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.my-reading-form input,
+.my-reading-form select {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.my-reading-form input:focus,
+.my-reading-form select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.my-reading-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 5px;
+}
+
+.my-reading-primary,
+.my-reading-secondary {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 9px 14px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+
+.my-reading-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.my-reading-primary:hover {
+  background: #416b55;
+}
+
+.my-reading-secondary {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.my-reading-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.my-reading-primary:disabled,
+.my-reading-secondary:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* Errors */
+
+.my-reading-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  margin: 12px 0;
+  border: 1px solid #efd6d0;
+  border-radius: 8px;
+  background: #fff5f2;
+  color: #a34d40;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.my-reading-error button {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Animation */
+
+.my-reading-spin {
+  animation: my-reading-rotate 1s linear infinite;
+}
+
+@keyframes my-reading-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 650px) {
+  .my-readings-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .my-readings-filter-area {
+    width: 100%;
+  }
+
+  .my-readings-filter {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .my-readings-list-panel {
+    padding: 14px;
+  }
+
+  .my-readings-list-heading {
+    align-items: flex-start;
+  }
+
+  .my-readings-list-actions {
+    gap: 8px;
+  }
+
+  .my-readings-result-count {
+    display: none;
+  }
+
+  .my-readings-groups {
+    gap: 18px;
+  }
+
+  .my-reading-date-count {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .my-readings-page .welcome-row {
+    gap: 15px;
+  }
+
+  .my-readings-page .welcome-row .primary-button {
+    width: 100%;
+  }
+
+  .my-readings-list-heading {
+    flex-direction: column;
+  }
+
+  .my-reading-modal {
+    padding: 18px;
+  }
+
+  .my-reading-form-actions > button {
+    flex: 1;
+  }
+}

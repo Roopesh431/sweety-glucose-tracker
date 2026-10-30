@@ -43,6 +43,7 @@ import AuthScreen from "./AuthScreen";
 import api from "./api";
 import AddReadingModal from "./AddReadingModal";
 import MyReadings from "./MyReadings";
+import Reports from "./Reports";
 
 // ============================================
 // THEME CONFIGURATION
@@ -165,14 +166,16 @@ const buildChartData = (allReadings) => {
     const date = new Date(today);
     date.setDate(today.getDate() - offset);
     const dateKey = getLocalDateString(date);
+
     const dayReadings = allReadings.filter(
       (reading) => String(reading.reading_date).slice(0, 10) === dateKey
     );
-    const average = dayReadings.length
-      ? dayReadings.reduce(
-          (sum, reading) => sum + Number(reading.glucose_value),
-          0
-        ) / dayReadings.length
+
+    const values = dayReadings.map((reading) =>
+      Number(reading.glucose_value)
+    );
+    const average = values.length
+      ? values.reduce((sum, value) => sum + value, 0) / values.length
       : null;
 
     days.push({
@@ -181,11 +184,39 @@ const buildChartData = (allReadings) => {
         month: "short",
       }),
       value: average === null ? null : Number(average.toFixed(1)),
+      rangeMin: values.length ? Math.min(...values) : null,
+      rangeMax: values.length ? Math.max(...values) : null,
+      rangeSpan: values.length ? Math.max(...values) - Math.min(...values) : null,
+      count: values.length,
     });
   }
 
   return days;
 };
+
+function GlucoseChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+
+  const point = payload.find((item) => item?.payload)?.payload;
+  if (!point || point.count === 0 || point.value === null) return null;
+
+  return (
+    <div className="glucose-chart-tooltip">
+      <strong>{label}</strong>
+      <div className="glucose-tooltip-row">
+        <span><i className="glucose-tooltip-dot average" />Daily average</span>
+        <b>{Number(point.value).toFixed(1)} mg/dL</b>
+      </div>
+      {point.rangeMin !== null && point.rangeMax !== null && (
+        <div className="glucose-tooltip-row">
+          <span><i className="glucose-tooltip-dot range" />Daily range</span>
+          <b>{point.rangeMin}–{point.rangeMax} mg/dL</b>
+        </div>
+      )}
+      <small>{point.count} {point.count === 1 ? "reading" : "readings"}</small>
+    </div>
+  );
+}
 
 // ============================================
 // MAIN APP
@@ -224,7 +255,13 @@ function DashboardApp({ user, onLogout }) {
   useEffect(() => {
     loadDashboardData();
   }, []);
-  const [activePage, setActivePage] = useState("Overview");
+  const [activePage, setActivePage] = useState(() => {
+  return sessionStorage.getItem("sweety-active-page") || "Overview";
+});
+
+useEffect(() => {
+  sessionStorage.setItem("sweety-active-page", activePage);
+}, [activePage]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [settings, setSettings] = useState(() => {
@@ -462,6 +499,8 @@ function DashboardApp({ user, onLogout }) {
             onAddReading={() => setShowAddReading(true)}
             onChanged={loadDashboardData}
           />
+        ) : activePage === "Reports" ? (
+          <Reports />
         ) : (
           <Dashboard
             activePage={activePage}
@@ -641,7 +680,11 @@ function Dashboard({
 
           <div className="chart-legend">
             <span className="legend-dot" />
-            Glucose level
+            Daily average
+            <span className="range-legend">
+              <span />
+              Daily min–max
+            </span>
             <span className="chart-unit">mg/dL</span>
           </div>
 
@@ -649,69 +692,87 @@ function Dashboard({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={chartData}
-                margin={{
-                  top: 10,
-                  right: 8,
-                  left: -18,
-                  bottom: 0,
-                }}
+                margin={{ top: 12, right: 10, left: -18, bottom: 0 }}
               >
                 <defs>
                   <linearGradient
-                    id="glucoseFill"
+                    id="glucoseAverageFill"
                     x1="0"
                     y1="0"
                     x2="0"
                     y2="1"
                   >
-                    <stop
-                      offset="0%"
-                      stopColor="var(--accent)"
-                      stopOpacity={0.23}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor="var(--accent)"
-                      stopOpacity={0.01}
-                    />
+                    <stop offset="0%" stopColor="#6F91B8" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#6F91B8" stopOpacity={0.015} />
                   </linearGradient>
                 </defs>
 
                 <CartesianGrid
-                  strokeDasharray="4 4"
-                  vertical={false}
-                  stroke="var(--border)"
+                  stroke="var(--chart-grid)"
+                  strokeDasharray="3 5"
+                  vertical
                 />
 
                 <XAxis
                   dataKey="day"
                   axisLine={false}
                   tickLine={false}
-                  tick={{
-                    fill: "var(--muted)",
-                    fontSize: 11,
-                  }}
-                  dy={10}
+                  tick={{ fill: "var(--muted)", fontSize: 10 }}
+                  tickMargin={10}
+                  minTickGap={12}
                 />
 
                 <YAxis
-                  domain={[0, "auto"]}
+                  domain={["dataMin - 20", "dataMax + 20"]}
                   axisLine={false}
                   tickLine={false}
-                  tick={{
-                    fill: "var(--muted)",
-                    fontSize: 11,
-                  }}
+                  tick={{ fill: "var(--muted)", fontSize: 10 }}
+                  width={42}
+                  tickCount={5}
                 />
 
-                <Tooltip />
+                <Tooltip
+                  cursor={{ stroke: "var(--chart-line)", strokeDasharray: "3 3" }}
+                  content={<GlucoseChartTooltip />}
+                />
+
+                {/* Stacked areas create a real min-to-max band. */}
+                <Area
+                  type="monotone"
+                  dataKey="rangeMin"
+                  stackId="dailyRange"
+                  stroke="none"
+                  fill="transparent"
+                  fillOpacity={0}
+                  activeDot={false}
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="rangeSpan"
+                  stackId="dailyRange"
+                  stroke="none"
+                  fill="#8EACCE"
+                  fillOpacity={0.28}
+                  activeDot={false}
+                  isAnimationActive={false}
+                />
 
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke="var(--accent)"
-                  strokeWidth={2.8}
-                  fill="url(#glucoseFill)"
+                  name="Daily average"
+                  stroke="var(--chart-line)"
+                  strokeWidth={2.5}
+                  fill="url(#glucoseAverageFill)"
+                  connectNulls={false}
+                  activeDot={{
+                    r: 4,
+                    fill: "var(--chart-line)",
+                    stroke: "var(--surface)",
+                    strokeWidth: 2,
+                  }}
+                  dot={false}
                 />
               </AreaChart>
             </ResponsiveContainer>
