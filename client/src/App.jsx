@@ -44,6 +44,7 @@ import api from "./api";
 import AddReadingModal from "./AddReadingModal";
 import MyReadings from "./MyReadings";
 import Reports from "./Reports";
+import HealthRecords from "./HealthRecords";
 
 // ============================================
 // THEME CONFIGURATION
@@ -158,22 +159,25 @@ const getLocalDateString = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const buildChartData = (allReadings) => {
+const buildChartData = (allReadings, numberOfDays = 7) => {
   const today = new Date();
   const days = [];
 
-  for (let offset = 6; offset >= 0; offset -= 1) {
+  for (let offset = numberOfDays - 1; offset >= 0; offset -= 1) {
     const date = new Date(today);
     date.setDate(today.getDate() - offset);
+
     const dateKey = getLocalDateString(date);
 
     const dayReadings = allReadings.filter(
-      (reading) => String(reading.reading_date).slice(0, 10) === dateKey
+      (reading) =>
+        String(reading.reading_date).slice(0, 10) === dateKey
     );
 
     const values = dayReadings.map((reading) =>
       Number(reading.glucose_value)
     );
+
     const average = values.length
       ? values.reduce((sum, value) => sum + value, 0) / values.length
       : null;
@@ -186,7 +190,9 @@ const buildChartData = (allReadings) => {
       value: average === null ? null : Number(average.toFixed(1)),
       rangeMin: values.length ? Math.min(...values) : null,
       rangeMax: values.length ? Math.max(...values) : null,
-      rangeSpan: values.length ? Math.max(...values) - Math.min(...values) : null,
+      rangeSpan: values.length
+        ? Math.max(...values) - Math.min(...values)
+        : null,
       count: values.length,
     });
   }
@@ -223,6 +229,7 @@ function GlucoseChartTooltip({ active, payload, label }) {
 // ============================================
 
 function DashboardApp({ user, onLogout }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAddReading, setShowAddReading] = useState(false);
   const [readings, setReadings] = useState([]);
   const [report, setReport] = useState(null);
@@ -262,7 +269,46 @@ function DashboardApp({ user, onLogout }) {
 useEffect(() => {
   sessionStorage.setItem("sweety-active-page", activePage);
 }, [activePage]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+const [searchTerm, setSearchTerm] = useState("");
+const [notificationsOpen, setNotificationsOpen] = useState(false);
+const [profileOpen, setProfileOpen] = useState(false);
+
+const [notificationsRead, setNotificationsRead] = useState(
+  () => localStorage.getItem("sweety-notifications-read") === "true"
+);
+
+const searchResults = readings.filter((reading) => {
+  const term = searchTerm.trim().toLowerCase();
+
+  if (!term) return false;
+
+  const date = String(reading.reading_date).slice(0, 10);
+  const slot = SLOT_LABELS[reading.time_slot] || reading.time_slot;
+
+  return (
+    String(reading.glucose_value).includes(term) ||
+    date.includes(term) ||
+    formatDate(date).toLowerCase().includes(term) ||
+    slot.toLowerCase().includes(term)
+  );
+}).slice(0, 6);
+
+const todayString = getLocalDateString(new Date());
+
+const hasReadingToday = readings.some(
+  (reading) =>
+    String(reading.reading_date).slice(0, 10) === todayString
+);
+
+const recentNotifications = readings.slice(0, 5);
+
+const hasNotifications = recentNotifications.length > 0 || !hasReadingToday;
+
+const markNotificationsRead = () => {
+  setNotificationsRead(true);
+  localStorage.setItem("sweety-notifications-read", "true");
+};
 
   const [settings, setSettings] = useState(() => {
     try {
@@ -445,43 +491,231 @@ useEffect(() => {
 
       <main className="main-content">
         <header className="topbar">
+  <button
+    className="menu-button"
+    onClick={() => setSidebarOpen(true)}
+    aria-label="Open navigation"
+  >
+    <Menu size={22} />
+  </button>
+
+  <div className="breadcrumb">
+    <span>Pages</span>
+    <span>/</span>
+    <strong>{activePage}</strong>
+  </div>
+
+  <div className="topbar-actions">
+
+    {/* SEARCH */}
+    <div className="topbar-dropdown-wrapper">
+      <button
+        className={`search-button ${searchOpen ? "selected" : ""}`}
+        aria-label="Search readings"
+        onClick={() => {
+          setSearchOpen(!searchOpen);
+          setNotificationsOpen(false);
+          setProfileOpen(false);
+        }}
+      >
+        <Search size={18} />
+      </button>
+
+      {searchOpen && (
+        <div className="topbar-dropdown search-dropdown">
+          <div className="dropdown-title">
+            <strong>Search readings</strong>
+            <button onClick={() => setSearchOpen(false)}>
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="global-search-input">
+            <Search size={16} />
+            <input
+              autoFocus
+              placeholder="Date, glucose value or time slot..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="global-search-results">
+            {!searchTerm.trim() ? (
+              <p className="dropdown-empty">
+                Search your glucose reading history.
+              </p>
+            ) : searchResults.length === 0 ? (
+              <p className="dropdown-empty">
+                No matching readings found.
+              </p>
+            ) : (
+              searchResults.map((reading) => (
+                <button
+                  className="global-search-result"
+                  key={reading.id}
+                  onClick={() => {
+                    setActivePage("My Readings");
+                    setSearchOpen(false);
+                  }}
+                >
+                  <span className="search-result-icon">
+                    <Droplets size={16} />
+                  </span>
+
+                  <span className="search-result-copy">
+                    <strong>
+                      {reading.glucose_value} mg/dL
+                    </strong>
+                    <small>
+                      {formatDate(reading.reading_date)} ·{" "}
+                      {formatSlot(reading.time_slot)}
+                    </small>
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+
+          {searchResults.length > 0 && (
+            <button
+              className="dropdown-footer-button"
+              onClick={() => {
+                setActivePage("My Readings");
+                setSearchOpen(false);
+              }}
+            >
+              View My Readings
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+
+    {/* NOTIFICATIONS */}
+    <div className="topbar-dropdown-wrapper">
+      <button
+        className={`notification-button ${
+          notificationsOpen ? "selected" : ""
+        }`}
+        aria-label="Notifications"
+        onClick={() => {
+          setNotificationsOpen(!notificationsOpen);
+          setSearchOpen(false);
+          setProfileOpen(false);
+          markNotificationsRead();
+        }}
+      >
+        <Bell size={19} />
+
+        {hasNotifications && !notificationsRead && <i />}
+      </button>
+
+      {notificationsOpen && (
+        <div className="topbar-dropdown notification-dropdown">
+          <div className="dropdown-title">
+            <div>
+              <strong>Notifications</strong>
+              <small>Your recent activity</small>
+            </div>
+
+            <button onClick={() => setNotificationsOpen(false)}>
+              <X size={16} />
+            </button>
+          </div>
+
+          {!hasReadingToday && (
+            <div className="notification-item reminder">
+              <span className="notification-icon">
+                <Clock3 size={17} />
+              </span>
+              <div>
+                <strong>No readings recorded today</strong>
+                <p>
+                  Add a reading whenever convenient to keep your history updated.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {recentNotifications.map((reading) => (
+            <div
+              className="notification-item"
+              key={reading.id}
+            >
+              <span className="notification-icon">
+                <Droplets size={17} />
+              </span>
+
+              <div>
+                <strong>Glucose reading recorded</strong>
+                <p>
+                  {reading.glucose_value} mg/dL ·{" "}
+                  {formatSlot(reading.time_slot)}
+                </p>
+                <small>{formatDate(reading.reading_date)}</small>
+              </div>
+            </div>
+          ))}
+
+          {recentNotifications.length === 0 && hasReadingToday && (
+            <p className="dropdown-empty">
+              No recent activity.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+
+    {/* PROFILE */}
+    <div className="topbar-dropdown-wrapper">
+      <button
+        className="top-avatar profile-avatar-button"
+        aria-label="Account menu"
+        onClick={() => {
+          setProfileOpen(!profileOpen);
+          setSearchOpen(false);
+          setNotificationsOpen(false);
+        }}
+      >
+        {(user?.name || "U")
+          .split(" ")
+          .map((part) => part[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()}
+      </button>
+
+      {profileOpen && (
+        <div className="topbar-dropdown profile-dropdown">
+          <div className="profile-dropdown-user">
+            <strong>{user?.name || "User"}</strong>
+            <small>{user?.email || "Personal account"}</small>
+          </div>
+
           <button
-            className="menu-button"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open navigation"
+            onClick={() => {
+              setActivePage("Settings");
+              setProfileOpen(false);
+            }}
           >
-            <Menu size={22} />
+            <Settings size={16} />
+            Settings
           </button>
 
-          <div className="breadcrumb">
-            <span>Pages</span>
-            <span>/</span>
-            <strong>{activePage}</strong>
-          </div>
+          <button
+            className="profile-logout"
+            onClick={onLogout}
+          >
+            <LogOut size={16} />
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
 
-          <div className="topbar-actions">
-            <button className="search-button" aria-label="Search">
-              <Search size={18} />
-            </button>
-
-            <button
-              className="notification-button"
-              aria-label="Notifications"
-            >
-              <Bell size={19} />
-              <i />
-            </button>
-
-            <div className="top-avatar">
-                {(user?.name || "U")
-                  .split(" ")
-                  .map((part) => part[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase()}
-            </div>
-          </div>
-        </header>
+  </div>
+</header>
 
         {activePage === "Settings" ? (
           <AppearanceSettings
@@ -501,6 +735,8 @@ useEffect(() => {
           />
         ) : activePage === "Reports" ? (
           <Reports />
+        ) : activePage === "Health Records" ? (
+          <HealthRecords />
         ) : (
           <Dashboard
             activePage={activePage}
@@ -543,6 +779,19 @@ function Dashboard({
   onRetry,
   onAddReading,
 }) {
+  const [chartRange, setChartRange] = useState("7");
+
+  const chartRangeDays = chartRange === "month"
+    ? new Date().getDate()
+    : Number(chartRange);
+
+  const chartRangeLabel = {
+    "7": "Last 7 days",
+    "14": "Last 14 days",
+    "30": "Last 30 days",
+    month: "This month",
+  }[chartRange];
+
   if (activePage !== "Overview") {
     return (
       <section className="dashboard-content">
@@ -576,7 +825,7 @@ function Dashboard({
 
   const monthlyStats = report?.monthToDate || {};
   const dailyStats = report?.daily || {};
-  const chartData = buildChartData(readings);
+  const chartData = buildChartData(readings, chartRangeDays);
   const recentReadings = readings.slice(0, 4);
 
   return (
@@ -620,11 +869,20 @@ function Dashboard({
           <p>A little snapshot of your glucose readings.</p>
         </div>
 
-        <button className="date-filter">
+        <label className="date-filter" aria-label="Select chart date range">
           <CalendarDays size={16} />
-          Last 7 days
+          <select
+            value={chartRange}
+            onChange={(event) => setChartRange(event.target.value)}
+            aria-label="Chart date range"
+          >
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="month">This month</option>
+          </select>
           <ChevronDown size={15} />
-        </button>
+        </label>
       </div>
 
       <div className="stats-grid">
@@ -670,7 +928,7 @@ function Dashboard({
           <div className="panel-header">
             <div>
               <h3>Your glucose journey</h3>
-              <p>Daily average from your last 7 days</p>
+              <p>Daily average · {chartRangeLabel}</p>
             </div>
 
             <button className="icon-button" aria-label="More options">
